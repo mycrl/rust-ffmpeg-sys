@@ -134,7 +134,7 @@ fn main() -> anyhow::Result<()> {
         .map(|label| label == "true")
         .unwrap_or(true);
 
-    let (include_prefix, lib_prefix) = find_ffmpeg_prefix(&out_dir, is_debug)?;
+    let (mut include_prefix, lib_prefix) = find_ffmpeg_prefix(&out_dir, is_debug)?;
     for path in &lib_prefix {
         println!("cargo:rustc-link-search=all={}", path);
     }
@@ -174,6 +174,19 @@ fn main() -> anyhow::Result<()> {
             println!("cargo:rustc-link-lib=framework={}", f);
         }
     }
+
+    let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
+    if !is_exsit(&media_sdk_prefix) {
+        exec(
+            "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
+            &out_dir,
+        )?;
+    }
+    
+    let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
+    include_prefix.append(&mut vec![
+        media_sdk_include_prefix.clone(),
+    ]);
 
     let clang_includes = include_prefix
         .iter()
@@ -274,52 +287,26 @@ fn main() -> anyhow::Result<()> {
         .blocklist_function("ynl")
         .opaque_type("__mingw_ldbl_type_t")
         .default_enum_style(bindgen::EnumVariation::Rust {
-            non_exhaustive: env::var("CARGO_FEATURE_NON_EXHAUSTIVE_ENUMS").is_ok(),
+            non_exhaustive: false,
         })
         .prepend_enum_name(false)
         .derive_eq(true)
         .size_t_is_usize(true)
-        .parse_callbacks(Box::new(Callbacks));
-
-    // The input headers we would like to generate
-    // bindings for.
-    if env::var("CARGO_FEATURE_AVCODEC").is_ok() {
-        builder = builder
-            .header(search_include(&include_prefix, "libavcodec/avcodec.h"))
+        .parse_callbacks(Box::new(Callbacks))
+        .header(search_include(&include_prefix, "libavcodec/avcodec.h"))
             .header(search_include(&include_prefix, "libavcodec/dv_profile.h"))
             .header(search_include(&include_prefix, "libavcodec/avfft.h"))
             .header(search_include(
                 &include_prefix,
                 "libavcodec/vorbis_parser.h",
-            ));
-    }
-
-    if env::var("CARGO_FEATURE_AVDEVICE").is_ok() {
-        builder = builder.header(search_include(&include_prefix, "libavdevice/avdevice.h"));
-    }
-
-    if env::var("CARGO_FEATURE_AVFILTER").is_ok() {
-        builder = builder
+            ))
+            .header(search_include(&include_prefix, "libavdevice/avdevice.h"))
             .header(search_include(&include_prefix, "libavfilter/buffersink.h"))
             .header(search_include(&include_prefix, "libavfilter/buffersrc.h"))
-            .header(search_include(&include_prefix, "libavfilter/avfilter.h"));
-    }
-
-    if env::var("CARGO_FEATURE_AVFORMAT").is_ok() {
-        builder = builder
+            .header(search_include(&include_prefix, "libavfilter/avfilter.h"))
             .header(search_include(&include_prefix, "libavformat/avformat.h"))
-            .header(search_include(&include_prefix, "libavformat/avio.h"));
-    }
-
-    if env::var("CARGO_FEATURE_AVRESAMPLE").is_ok() {
-        builder = builder.header(search_include(
-            &include_prefix,
-            "libavresample/avresample.h",
-        ));
-    }
-
-    builder = builder
-        .header(search_include(&include_prefix, "libavutil/adler32.h"))
+            .header(search_include(&include_prefix, "libavformat/avio.h"))
+            .header(search_include(&include_prefix, "libavutil/adler32.h"))
         .header(search_include(&include_prefix, "libavutil/aes.h"))
         .header(search_include(&include_prefix, "libavutil/audio_fifo.h"))
         .header(search_include(&include_prefix, "libavutil/base64.h"))
@@ -376,21 +363,17 @@ fn main() -> anyhow::Result<()> {
         .header(search_include(&include_prefix, "libavutil/timecode.h"))
         .header(search_include(&include_prefix, "libavutil/twofish.h"))
         .header(search_include(&include_prefix, "libavutil/avutil.h"))
-        .header(search_include(&include_prefix, "libavutil/xtea.h"));
-
-    if env::var("CARGO_FEATURE_POSTPROC").is_ok() {
-        builder = builder.header(search_include(&include_prefix, "libpostproc/postprocess.h"));
-    }
-
-    if env::var("CARGO_FEATURE_SWRESAMPLE").is_ok() {
-        builder = builder.header(search_include(
+        .header(search_include(&include_prefix, "libavutil/xtea.h"))
+        .header(search_include(&include_prefix, "libpostproc/postprocess.h"))
+        .header(search_include(
             &include_prefix,
             "libswresample/swresample.h",
-        ));
-    }
+        ))
+        .header(search_include(&include_prefix, "libpostproc/postprocess.h"));
 
-    if env::var("CARGO_FEATURE_SWSCALE").is_ok() {
-        builder = builder.header(search_include(&include_prefix, "libswscale/swscale.h"));
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
     }
 
     if let Some(hwcontext_drm_header) =

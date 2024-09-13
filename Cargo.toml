@@ -1,6 +1,7 @@
 [package]
 name    = "ffmpeg-sys-next"
 version = "7.0.2"
+edition = "2021"
 build   = "build.rs"
 links   = "ffmpeg"
 
@@ -19,13 +20,8 @@ doctest = false
 libc = "0.2"
 
 [build-dependencies]
-num_cpus   = "1.16"
-cc         = "1.0"
-pkg-config = "0.3"
+anyhow = "1.0.80"
 bindgen    = { version = "0.69", default-features = false, features = ["runtime"] }
-
-[target.'cfg(target_env = "msvc")'.build-dependencies]
-vcpkg = "0.2"
 
 [features]
 default  = ["avcodec", "avdevice", "avfilter", "avformat", "swresample", "swscale"]

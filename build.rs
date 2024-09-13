@@ -144,7 +144,6 @@ fn main() -> anyhow::Result<()> {
         "avdevice",
         "avfilter",
         "avformat",
-        "avresample",
         "avutil",
         "postproc",
         "swresample",

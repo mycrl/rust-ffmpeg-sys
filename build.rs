@@ -182,11 +182,9 @@ fn main() -> anyhow::Result<()> {
             &out_dir,
         )?;
     }
-    
+
     let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
-    include_prefix.append(&mut vec![
-        media_sdk_include_prefix.clone(),
-    ]);
+    include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
 
     let clang_includes = include_prefix
         .iter()
@@ -294,19 +292,19 @@ fn main() -> anyhow::Result<()> {
         .size_t_is_usize(true)
         .parse_callbacks(Box::new(Callbacks))
         .header(search_include(&include_prefix, "libavcodec/avcodec.h"))
-            .header(search_include(&include_prefix, "libavcodec/dv_profile.h"))
-            .header(search_include(&include_prefix, "libavcodec/avfft.h"))
-            .header(search_include(
-                &include_prefix,
-                "libavcodec/vorbis_parser.h",
-            ))
-            .header(search_include(&include_prefix, "libavdevice/avdevice.h"))
-            .header(search_include(&include_prefix, "libavfilter/buffersink.h"))
-            .header(search_include(&include_prefix, "libavfilter/buffersrc.h"))
-            .header(search_include(&include_prefix, "libavfilter/avfilter.h"))
-            .header(search_include(&include_prefix, "libavformat/avformat.h"))
-            .header(search_include(&include_prefix, "libavformat/avio.h"))
-            .header(search_include(&include_prefix, "libavutil/adler32.h"))
+        .header(search_include(&include_prefix, "libavcodec/dv_profile.h"))
+        .header(search_include(&include_prefix, "libavcodec/avfft.h"))
+        .header(search_include(
+            &include_prefix,
+            "libavcodec/vorbis_parser.h",
+        ))
+        .header(search_include(&include_prefix, "libavdevice/avdevice.h"))
+        .header(search_include(&include_prefix, "libavfilter/buffersink.h"))
+        .header(search_include(&include_prefix, "libavfilter/buffersrc.h"))
+        .header(search_include(&include_prefix, "libavfilter/avfilter.h"))
+        .header(search_include(&include_prefix, "libavformat/avformat.h"))
+        .header(search_include(&include_prefix, "libavformat/avio.h"))
+        .header(search_include(&include_prefix, "libavutil/adler32.h"))
         .header(search_include(&include_prefix, "libavutil/aes.h"))
         .header(search_include(&include_prefix, "libavutil/audio_fifo.h"))
         .header(search_include(&include_prefix, "libavutil/base64.h"))

@@ -376,10 +376,6 @@ fn main() -> anyhow::Result<()> {
             .header(search_include(
                 &include_prefix,
                 "libavutil/hwcontext_d3d11va.h",
-            ))
-            .header(search_include(
-                &include_prefix,
-                "libavutil/hwcontext_d3d12va.h",
             ));
     }
 

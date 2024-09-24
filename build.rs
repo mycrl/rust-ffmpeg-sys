@@ -371,7 +371,16 @@ fn main() -> anyhow::Result<()> {
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder.header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
+        builder = builder
+            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"))
+            .header(search_include(
+                &include_prefix,
+                "libavutil/hwcontext_d3d11va.h",
+            ))
+            .header(search_include(
+                &include_prefix,
+                "libavutil/hwcontext_d3d12va.h",
+            ));
     }
 
     if let Some(hwcontext_drm_header) =

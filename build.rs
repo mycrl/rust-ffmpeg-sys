@@ -119,16 +119,14 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
     format!("/usr/include/{}", header)
 }
 
-static LIBRARYS: [(&str, &str); 8] = [
-    ("avcodec", "6.0"),
-    ("avdevice", "6.0"),
-    ("avfilter", "6.0"),
-    ("avformat", "6.0"),
-    ("avutil", "6.0"),
-    ("postproc", "6.0"),
-    ("swresample", "4.7"),
-    ("swscale", "6.0"),
-];
+fn maybe_search_include(include_prefix: &Vec<String>, header: &str) -> Option<String> {
+    let path = search_include(include_prefix, header);
+    if fs::metadata(&path).is_ok() {
+        Some(path)
+    } else {
+        None
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     let out_dir = env::var("OUT_DIR")?;
@@ -141,7 +139,16 @@ fn main() -> anyhow::Result<()> {
         println!("cargo:rustc-link-search=all={}", path);
     }
 
-    for (lib, _) in LIBRARYS {
+    for lib in [
+        "avcodec",
+        "avdevice",
+        "avfilter",
+        "avformat",
+        "avutil",
+        "postproc",
+        "swresample",
+        "swscale",
+    ] {
         println!("cargo:rustc-link-lib={}", lib);
     }
 
@@ -372,9 +379,10 @@ fn main() -> anyhow::Result<()> {
             ));
     }
 
-    #[cfg(target_os = "linux")]
+    if let Some(hwcontext_drm_header) =
+        maybe_search_include(&include_prefix, "libavutil/hwcontext_drm.h")
     {
-        builder = builder.header(search_include(&include_prefix, "libavutil/hwcontext_drm.h"));
+        builder = builder.header(hwcontext_drm_header);
     }
 
     // Finish the builder and generate the bindings.
@@ -421,23 +429,19 @@ fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<Stri
             vec![join(&prefix, "./lib")?],
         ))
     } else {
-        let mut librarys = Vec::new();
-        let mut includes = Vec::new();
+        let prefix = join(out_dir, "ffmpeg").unwrap();
+        if !is_exsit(&prefix) {
+            exec(
+                "wget https://github.com/mycrl/third-party/releases/download/distributions/ffmpeg-linux-x64-release.zip -O ffmpeg.zip",
+                out_dir,
+            )?;
 
-        for (name, version) in LIBRARYS {
-            let lib = pkg_config::Config::new()
-                .atleast_version(version)
-                .probe(&format!("lib{}", name))?;
-
-            for path in lib.link_paths {
-                librarys.push(path.to_str().unwrap().to_string());
-            }
-
-            for path in lib.include_paths {
-                includes.push(path.to_str().unwrap().to_string());
-            }
+            exec("unzip ffmpeg.zip", out_dir)?;
         }
 
-        Ok((includes, librarys))
+        Ok((
+            vec![join(&prefix, "./include")?],
+            vec![join(&prefix, "./lib")?],
+        ))
     }
 }

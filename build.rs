@@ -120,14 +120,14 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
 }
 
 static LIBRARYS: [(&str, &str); 8] = [
-    ("avcodec", "60"),
-    ("avdevice", "60"),
-    ("avfilter", "9"),
-    ("avformat", "60"),
-    ("avutil", "58"),
-    ("postproc", "57"),
-    ("swresample", "4"),
-    ("swscale", "7"),
+    ("avcodec", "6.0"),
+    ("avdevice", "6.0"),
+    ("avfilter", "6.0"),
+    ("avformat", "6.0"),
+    ("avutil", "6.0"),
+    ("postproc", "6.0"),
+    ("swresample", "4.7"),
+    ("swscale", "6.0"),
 ];
 
 fn main() -> anyhow::Result<()> {
@@ -360,15 +360,16 @@ fn main() -> anyhow::Result<()> {
             &include_prefix,
             "libswresample/swresample.h",
         ))
-        .header(search_include(&include_prefix, "libpostproc/postprocess.h"))
-        .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
+        .header(search_include(&include_prefix, "libpostproc/postprocess.h"));
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder.header(search_include(
-            &include_prefix,
-            "libavutil/hwcontext_d3d11va.h",
-        ));
+        builder = builder
+            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"))
+            .header(search_include(
+                &include_prefix,
+                "libavutil/hwcontext_d3d11va.h",
+            ));
     }
 
     #[cfg(target_os = "linux")]
@@ -426,7 +427,7 @@ fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<Stri
         for (name, version) in LIBRARYS {
             let lib = pkg_config::Config::new()
                 .atleast_version(version)
-                .probe(name)?;
+                .probe(&format!("lib{}", name))?;
 
             for path in lib.link_paths {
                 librarys.push(path.to_str().unwrap().to_string());

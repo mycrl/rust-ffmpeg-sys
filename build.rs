@@ -116,18 +116,11 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
             return include;
         }
     }
+
     format!("/usr/include/{}", header)
 }
 
-fn maybe_search_include(include_prefix: &Vec<String>, header: &str) -> Option<String> {
-    let path = search_include(include_prefix, header);
-    if fs::metadata(&path).is_ok() {
-        Some(path)
-    } else {
-        None
-    }
-}
-
+#[allow(unused_mut)]
 fn main() -> anyhow::Result<()> {
     let out_dir = env::var("OUT_DIR")?;
     let is_debug = env::var("DEBUG")
@@ -175,16 +168,19 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
-    if !is_exsit(&media_sdk_prefix) {
-        exec(
-            "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
-            &out_dir,
-        )?;
-    }
+    #[cfg(target_os = "windows")]
+    {
+        let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
+        if !is_exsit(&media_sdk_prefix) {
+            exec(
+                "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
+                &out_dir,
+            )?;
+        }
 
-    let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
-    include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
+        let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
+        include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
+    }
 
     let clang_includes = include_prefix
         .iter()
@@ -379,10 +375,9 @@ fn main() -> anyhow::Result<()> {
             ));
     }
 
-    if let Some(hwcontext_drm_header) =
-        maybe_search_include(&include_prefix, "libavutil/hwcontext_drm.h")
+    #[cfg(target_os = "linux")]
     {
-        builder = builder.header(hwcontext_drm_header);
+        builder = builder.header(search_include(&include_prefix, "libavutil/hwcontext_drm.h"));
     }
 
     // Finish the builder and generate the bindings.

@@ -395,14 +395,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<String>, Vec<String>)> {
-    if cfg!(target_os = "macos") {
-        let prefix = exec("brew --prefix ffmpeg@6", out_dir)?.replace('\n', "");
-
-        Ok((
-            vec![join(&prefix, "./include")?],
-            vec![join(&prefix, "./lib")?],
-        ))
-    } else if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") {
         let prefix = join(out_dir, "ffmpeg").unwrap();
         if !is_exsit(&prefix) {
             exec(
@@ -424,15 +417,7 @@ fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<Stri
             vec![join(&prefix, "./lib")?],
         ))
     } else {
-        let prefix = join(out_dir, "ffmpeg").unwrap();
-        if !is_exsit(&prefix) {
-            exec(
-                "wget https://github.com/mycrl/third-party/releases/download/distributions/ffmpeg-linux-x64-release.zip -O ffmpeg.zip",
-                out_dir,
-            )?;
-
-            exec("unzip ffmpeg.zip", out_dir)?;
-        }
+        let prefix = exec("brew --prefix ffmpeg@7", out_dir)?.replace('\n', "");
 
         Ok((
             vec![join(&prefix, "./include")?],

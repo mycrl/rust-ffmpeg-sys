@@ -142,7 +142,7 @@ fn main() -> anyhow::Result<()> {
         "swresample",
         "swscale",
     ] {
-        println!("cargo:rustc-link-lib=static={}", lib);
+        println!("cargo:rustc-link-lib={}", lib);
     }
 
     if cfg!(target_os = "macos") {

@@ -116,11 +116,20 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
             return include;
         }
     }
-
     format!("/usr/include/{}", header)
 }
 
-#[allow(unused_mut)]
+static LIBRARYS: [(&str, &str); 8] = [
+    ("avcodec", "59.37.100"),
+    ("avdevice", "59.7.100"),
+    ("avfilter", "8.44.100"),
+    ("avformat", "59.27.100"),
+    ("avutil", "57.28.100"),
+    ("postproc", "56.6.100"),
+    ("swresample", "4.7.100"),
+    ("swscale", "6.7.100"),
+];
+
 fn main() -> anyhow::Result<()> {
     let out_dir = env::var("OUT_DIR")?;
     let is_debug = env::var("DEBUG")
@@ -132,16 +141,7 @@ fn main() -> anyhow::Result<()> {
         println!("cargo:rustc-link-search=all={}", path);
     }
 
-    for lib in [
-        "avcodec",
-        "avdevice",
-        "avfilter",
-        "avformat",
-        "avutil",
-        "postproc",
-        "swresample",
-        "swscale",
-    ] {
+    for (lib, _) in LIBRARYS {
         println!("cargo:rustc-link-lib={}", lib);
     }
 
@@ -168,19 +168,16 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    #[cfg(target_os = "windows")]
-    {
-        let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
-        if !is_exsit(&media_sdk_prefix) {
-            exec(
-                "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
-                &out_dir,
-            )?;
-        }
-
-        let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
-        include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
+    let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
+    if !is_exsit(&media_sdk_prefix) {
+        exec(
+            "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
+            &out_dir,
+        )?;
     }
+
+    let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
+    include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
 
     let clang_includes = include_prefix
         .iter()
@@ -368,11 +365,11 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "windows")]
     {
         builder = builder
-            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"))
             .header(search_include(
                 &include_prefix,
                 "libavutil/hwcontext_d3d11va.h",
-            ));
+            ))
+            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
     }
 
     #[cfg(target_os = "linux")]
@@ -424,19 +421,23 @@ fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<Stri
             vec![join(&prefix, "./lib")?],
         ))
     } else {
-        let prefix = join(out_dir, "ffmpeg").unwrap();
-        if !is_exsit(&prefix) {
-            exec(
-                "wget https://github.com/mycrl/third-party/releases/download/distributions/ffmpeg-linux-x64-release.zip -O ffmpeg.zip",
-                out_dir,
-            )?;
+        let mut librarys = Vec::new();
+        let mut includes = Vec::new();
 
-            exec("unzip ffmpeg.zip", out_dir)?;
+        for (name, version) in LIBRARYS {
+            let lib = pkg_config::Config::new()
+                .atleast_version(version)
+                .probe(&format!("lib{}", name))?;
+
+            for path in lib.link_paths {
+                librarys.push(path.to_str().unwrap().to_string());
+            }
+
+            for path in lib.include_paths {
+                includes.push(path.to_str().unwrap().to_string());
+            }
         }
 
-        Ok((
-            vec![join(&prefix, "./include")?],
-            vec![join(&prefix, "./lib")?],
-        ))
+        Ok((includes, librarys))
     }
 }

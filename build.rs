@@ -119,7 +119,7 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
     format!("/usr/include/{}", header)
 }
 
-static LIBRARYS: [(&str, &str); 8] = [
+static LIBRARYS: [(&str, &str); 9] = [
     ("avcodec", "59.37.100"),
     ("avdevice", "59.7.100"),
     ("avfilter", "8.44.100"),
@@ -128,8 +128,11 @@ static LIBRARYS: [(&str, &str); 8] = [
     ("postproc", "56.6.100"),
     ("swresample", "4.7.100"),
     ("swscale", "6.7.100"),
+    #[cfg(target_os = "linux")]
+    ("mfx", ""),
 ];
 
+#[allow(unused_mut)]
 fn main() -> anyhow::Result<()> {
     let out_dir = env::var("OUT_DIR")?;
     let is_debug = env::var("DEBUG")
@@ -168,16 +171,19 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
-    if !is_exsit(&media_sdk_prefix) {
-        exec(
-            "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
-            &out_dir,
-        )?;
-    }
+    #[cfg(target_os = "windows")]
+    {
+        let media_sdk_prefix = join(&out_dir, "media-sdk").unwrap();
+        if !is_exsit(&media_sdk_prefix) {
+            exec(
+                "git clone https://github.com/Intel-Media-SDK/MediaSDK media-sdk",
+                &out_dir,
+            )?;
+        }
 
-    let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
-    include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
+        let media_sdk_include_prefix = join(&media_sdk_prefix, "./api/include")?;
+        include_prefix.append(&mut vec![media_sdk_include_prefix.clone()]);
+    }
 
     let clang_includes = include_prefix
         .iter()

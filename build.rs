@@ -360,16 +360,16 @@ fn main() -> anyhow::Result<()> {
             &include_prefix,
             "libswresample/swresample.h",
         ))
-        .header(search_include(&include_prefix, "libpostproc/postprocess.h"));
+        .header(search_include(&include_prefix, "libpostproc/postprocess.h"))
+        .header(search_include(&include_prefix, "libswscale/swscale.h"))
+        .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder
-            .header(search_include(
-                &include_prefix,
-                "libavutil/hwcontext_d3d11va.h",
-            ))
-            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
+        builder = builder.header(search_include(
+            &include_prefix,
+            "libavutil/hwcontext_d3d11va.h",
+        ));
     }
 
     #[cfg(target_os = "linux")]

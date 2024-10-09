@@ -119,6 +119,18 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
     format!("/usr/include/{}", header)
 }
 
+static LIBRARYS: [(&str, &str); 8] = [
+    ("avcodec", ""),
+    ("avdevice", ""),
+    ("avfilter", ""),
+    ("avformat", ""),
+    ("avutil", ""),
+    ("postproc", ""),
+    ("swresample", ""),
+    ("swscale", ""),
+];
+
+#[cfg(target_os = "linux")]
 static LIBRARYS: [(&str, &str); 9] = [
     ("avcodec", "59.37.100"),
     ("avdevice", "59.7.100"),
@@ -128,7 +140,6 @@ static LIBRARYS: [(&str, &str); 9] = [
     ("postproc", "56.6.100"),
     ("swresample", "4.7.100"),
     ("swscale", "6.7.100"),
-    #[cfg(target_os = "linux")]
     ("mfx", ""),
 ];
 
@@ -367,20 +378,23 @@ fn main() -> anyhow::Result<()> {
             "libswresample/swresample.h",
         ))
         .header(search_include(&include_prefix, "libpostproc/postprocess.h"))
-        .header(search_include(&include_prefix, "libswscale/swscale.h"))
-        .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
+        .header(search_include(&include_prefix, "libswscale/swscale.h"));
 
     #[cfg(target_os = "windows")]
     {
-        builder = builder.header(search_include(
-            &include_prefix,
-            "libavutil/hwcontext_d3d11va.h",
-        ));
+        builder = builder
+            .header(search_include(
+                &include_prefix,
+                "libavutil/hwcontext_d3d11va.h",
+            ))
+            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
     }
 
     #[cfg(target_os = "linux")]
     {
-        builder = builder.header(search_include(&include_prefix, "libavutil/hwcontext_drm.h"));
+        builder = builder
+            .header(search_include(&include_prefix, "libavutil/hwcontext_drm.h"))
+            .header(search_include(&include_prefix, "libavutil/hwcontext_qsv.h"));
     }
 
     // Finish the builder and generate the bindings.

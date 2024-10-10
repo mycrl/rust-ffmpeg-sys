@@ -119,6 +119,7 @@ fn search_include(include_prefix: &Vec<String>, header: &str) -> String {
     format!("/usr/include/{}", header)
 }
 
+#[cfg(target_os = "windows")]
 static LIBRARYS: [(&str, &str); 8] = [
     ("avcodec", ""),
     ("avdevice", ""),

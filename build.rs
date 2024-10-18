@@ -133,14 +133,14 @@ static LIBRARYS: [(&str, &str); 8] = [
 
 #[cfg(target_os = "linux")]
 static LIBRARYS: [(&str, &str); 9] = [
-    ("avcodec", "59.37.100"),
-    ("avdevice", "59.7.100"),
-    ("avfilter", "8.44.100"),
-    ("avformat", "59.27.100"),
-    ("avutil", "57.28.100"),
-    ("postproc", "56.6.100"),
-    ("swresample", "4.7.100"),
-    ("swscale", "6.7.100"),
+    ("avcodec", "58"),
+    ("avdevice", "58"),
+    ("avfilter", "7"),
+    ("avformat", "58"),
+    ("avutil", "56"),
+    ("postproc", "55"),
+    ("swresample", "3"),
+    ("swscale", "5"),
     ("mfx", ""),
 ];
 

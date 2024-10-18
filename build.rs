@@ -414,7 +414,7 @@ fn main() -> anyhow::Result<()> {
 
 fn find_ffmpeg_prefix(out_dir: &str, is_debug: bool) -> anyhow::Result<(Vec<String>, Vec<String>)> {
     if cfg!(target_os = "macos") {
-        let prefix = exec("brew --prefix ffmpeg@6", out_dir)?.replace('\n', "");
+        let prefix = exec("brew --prefix ffmpeg@7", out_dir)?.replace('\n', "");
 
         Ok((
             vec![join(&prefix, "./include")?],
